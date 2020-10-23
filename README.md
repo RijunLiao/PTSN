@@ -1,5 +1,5 @@
 # PTSN
-PTSN is a Pose-based temporal-spatial network to handld with the carrying and clothing variations for gait recognition.
+PTSN is a Pose-based temporal-spatial network to handle with the carrying and clothing variations for gait recognition.
 Link to paper:
 - [Pose-based temporal-spatial network (PTSN) for gait recognition with carrying and clothing variations](http://r.web.umkc.edu/rlyfv/papers/2017_ccbr.pdf)
 
