@@ -1,0 +1,20 @@
+net: "train_test_lstm_RGB.prototxt"
+test_iter: 10
+#test_iter: 1
+test_state: { stage: 'test-on-test' }
+test_interval: 2000
+base_lr: 0.01
+lr_policy: "step"
+gamma: 0.1
+stepsize: 10000
+display: 20
+max_iter: 30000
+momentum: 0.9
+weight_decay: 0.005
+snapshot: 2000
+snapshot_prefix: "center_loss_sample_version_2"
+solver_mode: GPU
+device_id: 0
+random_seed: 1701
+average_loss: 1000
+clip_gradients: 10

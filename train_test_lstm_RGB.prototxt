@@ -1,0 +1,425 @@
+name: "lstm_joints"
+layer {
+  name: "data"
+  type: "Python"
+  top: "data"
+  top: "data_still"
+  top: "label"
+  top: "label_smi"
+  top: "clip_markers"
+  python_param {
+    module: "sequence_input_layer"
+    layer: "videoReadTrain_RGB"
+  }
+  include: { phase: TRAIN }
+}
+
+layer {
+  name: "data"
+  type: "Python"
+  top: "data"
+  top: "data_still"
+  top: "label"
+  top: "label_smi"
+  top: "clip_markers"
+  python_param {
+    module: "sequence_input_layer"
+    layer: "videoReadTest_RGB"
+  }
+  include: { phase: TEST stage: "test-on-test" }
+}
+layer {
+  name: "fc-d1"
+  type: "InnerProduct"
+  bottom: "data"
+  top: "fc-d1"
+  inner_product_param {
+    num_output: 64
+    weight_filler {
+      type: "xavier"
+      std: 0.1
+    }
+  }
+}
+layer {
+  name: "relu-d1"
+  type: "ReLU"
+  bottom: "fc-d1"
+  top: "fc-d1"
+}
+layer {
+  name: "fc-d2"
+  type: "InnerProduct"
+  bottom: "fc-d1"
+  top: "fc-d2"
+  inner_product_param {
+    num_output: 128
+    weight_filler {
+      type: "xavier"
+      std: 0.1
+    }
+  }
+}
+layer {
+  name: "relu-d2"
+  type: "ReLU"
+  bottom: "fc-d2"
+  top: "fc-d2"
+}
+layer {
+  name: "fc-d3"
+  type: "InnerProduct"
+  bottom: "fc-d2"
+  top: "fc-d3"
+  inner_product_param {
+    num_output: 256
+    weight_filler {
+      type: "xavier"
+      std: 0.1
+    }
+  }
+}
+layer {
+  name: "relu-d3"
+  type: "ReLU"
+  bottom: "fc-d3"
+  top: "fc-d3"
+}
+layer {
+  name: "fc-d4"
+  type: "InnerProduct"
+  bottom: "fc-d3"
+  top: "fc-d4"
+  inner_product_param {
+    num_output: 512
+    weight_filler {
+      type: "xavier"
+      std: 0.1
+    }
+  }
+}
+layer {
+  name: "relu-d4"
+  type: "ReLU"
+  bottom: "fc-d4"
+  top: "fc-d4"
+}
+layer {
+  name: "reshape-fc"
+  type: "Reshape"
+  bottom: "fc-d4"
+  top: "reshape-fc"
+  reshape_param {
+    shape {
+      dim: 32
+      dim: 256
+      dim: 512
+    }
+  }
+}
+layer {
+  name: "reshape-cm"
+  type: "Reshape"
+  bottom: "clip_markers"
+  top: "reshape-cm"
+  reshape_param {
+    shape {
+      dim: 32
+      dim: 256
+    }
+  }
+}
+layer {
+  name: "lstm1"
+  type: "LSTM"
+  bottom: "reshape-fc"
+  bottom: "reshape-cm"
+  top: "lstm1"
+  recurrent_param {
+    num_output: 512
+    weight_filler {
+      type: "uniform"
+      min: -0.08
+      max: 0.08
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "lstm2"
+  type: "LSTM"
+  bottom: "lstm1"
+  bottom: "reshape-cm"
+  top: "lstm2"
+  recurrent_param {
+    num_output: 1024
+    weight_filler {
+      type: "uniform"
+      min: -0.08
+      max: 0.08
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "reshape-lstm"
+  type: "Reshape"
+  bottom: "lstm2"
+  top: "reshape-lstm"
+  reshape_param {
+    shape {
+      dim: 1
+      dim: 32
+      dim: 256
+      dim: 1024
+    }
+  }
+}
+layer {
+  name: "conv-mean"
+  type: "Convolution"
+  bottom: "reshape-lstm"
+  top: "conv-mean"
+  convolution_param {
+    num_output: 1
+    kernel_size: 1
+    weight_filler {
+      type: "xavier"
+      std: 0.1
+    }
+  }
+}
+layer {
+  name: "reshape-mean"
+  type: "Reshape"
+  bottom: "conv-mean"
+  top: "reshape-mean"
+  reshape_param {
+    shape {
+      dim: 256
+      dim: 1024
+    }
+  }
+}
+layer {
+  name: "reshape-data"
+  type: "Reshape"
+  bottom: "data_still"
+  top: "reshape-data"
+  reshape_param {
+    shape {
+      dim: 256
+      dim: 1
+      dim: 32
+      dim: 12
+    }
+  }
+}
+layer {
+  name: "conv1_1"
+  type: "Convolution"
+  bottom: "reshape-data"
+  top: "conv1_1"
+  convolution_param {
+    num_output: 64
+    pad: 1
+    kernel_size: 3
+    weight_filler {
+      type: "xavier"
+      std: 0.1
+    }
+  }
+}
+layer {
+  name: "relu1_1"
+  type: "ReLU"
+  bottom: "conv1_1"
+  top: "conv1_1"
+}
+layer {
+  name: "conv1_2"
+  type: "Convolution"
+  bottom: "conv1_1"
+  top: "conv1_2"
+  convolution_param {
+    num_output: 64
+    pad: 1
+    kernel_size: 3
+    weight_filler {
+      type: "xavier"
+      std: 0.1
+    }
+  }
+}
+layer {
+  name: "relu1_2"
+  type: "ReLU"
+  bottom: "conv1_2"
+  top: "conv1_2"
+}
+layer {
+  name: "pool1"
+  type: "Pooling"
+  bottom: "conv1_2"
+  top: "pool1"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+  }
+}
+layer {
+  name: "conv2_1"
+  type: "Convolution"
+  bottom: "pool1"
+  top: "conv2_1"
+  convolution_param {
+    num_output: 128
+    pad: 1
+    kernel_size: 3
+    weight_filler {
+      type: "xavier"
+      std: 0.1
+    }
+  }
+}
+layer {
+  name: "relu2_1"
+  type: "ReLU"
+  bottom: "conv2_1"
+  top: "conv2_1"
+}
+layer {
+  name: "conv2_2"
+  type: "Convolution"
+  bottom: "conv2_1"
+  top: "conv2_2"
+  convolution_param {
+    num_output: 128
+    pad: 1
+    kernel_size: 3
+    weight_filler {
+      type: "xavier"
+      std: 0.1
+    }
+  }
+}
+layer {
+  name: "relu2_2"
+  type: "ReLU"
+  bottom: "conv2_2"
+  top: "conv2_2"
+}
+layer {
+  name: "pool2"
+  type: "Pooling"
+  bottom: "conv2_2"
+  top: "pool2"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+  }
+}
+layer {
+  name: "fc-s5"
+  type: "InnerProduct"
+  bottom: "pool2"
+  top: "fc-s5"
+  inner_product_param {
+    num_output: 1024
+    weight_filler {
+      type: "xavier"
+      std: 0.1
+    }
+  }
+}
+layer {
+  name: "relu5"
+  type: "ReLU"
+  bottom: "fc-s5"
+  top: "fc-s5"
+}
+layer {
+  name: "concat-ds"
+  type: "Concat"
+  bottom: "reshape-mean"
+  bottom: "fc-s5"
+  top: "concat-ds"
+  concat_param {
+    axis: 1
+  }
+}
+layer {
+  name: "fc-ds1"
+  type: "InnerProduct"
+  bottom: "concat-ds"
+  top: "fc-ds1"
+  inner_product_param {
+    num_output: 4096
+    weight_filler {
+      type: "xavier"
+      std: 0.1
+    }
+  }
+}
+layer {
+  name: "relu-ds1"
+  type: "ReLU"
+  bottom: "fc-ds1"
+  top: "fc-ds1"
+}
+layer {
+  name: "slice_pair"
+  type: "Slice"
+  bottom: "fc-ds1"
+  top: "feat"
+  top: "feat_p"
+  slice_param {
+    slice_dim: 0
+    slice_point: 128
+  }
+}
+layer {
+  name: "loss_smi"
+  type: "ContrastiveLoss"
+  bottom: "feat"
+  bottom: "feat_p"
+  bottom: "label_smi"
+  top: "loss_smi"
+  loss_weight: 0.01
+  contrastive_loss_param {
+    margin: 10
+  }
+}
+layer {
+  name: "fc-ds2"
+  type: "InnerProduct"
+  bottom: "fc-ds1"
+  top: "fc-ds2"
+  inner_product_param {
+    num_output: 62
+    weight_filler {
+      type: "xavier"
+      std: 0.1
+    }
+  }
+}
+layer {
+  name: "loss"
+  type: "SoftmaxWithLoss"
+  bottom: "fc-ds2"
+  bottom: "label"
+  top: "loss"
+}
+layer {
+  name: "accuracy"
+  type: "Accuracy"
+  bottom: "fc-ds2"
+  bottom: "label"
+  top: "accuracy"
+}
